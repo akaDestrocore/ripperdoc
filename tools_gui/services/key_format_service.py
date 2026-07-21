@@ -43,7 +43,7 @@ def encode(raw: bytes, fmt: str) -> str:
     raise ValueError(f"Unsupported format '{fmt}', expected one of {SUPPORTED_FORMATS}")
 
 
-def encodeBytes(raw: bytes, fmt: str) -> bytes:
+def encode_bytes_for_export(raw: bytes, fmt: str) -> bytes:
     if fmt == FORMAT_HEX:
         return raw.hex().encode("ascii")
 

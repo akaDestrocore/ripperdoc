@@ -1,0 +1,42 @@
+{
+  "app.title": "RIPPERDOC",
+
+  "nav.keygen": "Key Generation",
+  "nav.sign_encrypt": "Sign & Encrypt",
+  "nav.verify": "Verify Signature",
+  "nav.patch_header": "Patch Header",
+  "nav.merge": "Merge",
+  "nav.settings": "Settings",
+
+  "common.browse": "Browse...",
+  "common.copy": "Copy",
+  "common.copied": "Copied to clipboard",
+  "common.save_as": "Save As...",
+  "common.execute": "EXECUTE",
+  "common.success": "Success",
+  "common.error": "Error",
+  "common.select_file": "Select File",
+
+  "keygen.title": "Key Generation",
+  "keygen.algorithm": "ALGORITHM:",
+  "keygen.key_size": "KEY SIZE (bits):",
+  "keygen.format": "DISPLAY FORMAT:",
+  "keygen.execute": "EXECUTE GENERATION",
+  "keygen.encryption_key": "ENCRYPTION KEY:",
+  "keygen.nonce": "INITIALIZATION VECTOR (IV):",
+  "keygen.export_hex": "Export Hex",
+  "keygen.export_base64": "Export Base64",
+  "keygen.export_pem": "Export PEM",
+  "keygen.export_der": "Export DER",
+  "keygen.no_key_yet": "Generate or paste a key first.",
+  "keygen.exported": "Exported to {path}",
+  "keygen.invalid_paste": "Could not parse pasted value as {format}.",
+
+  "settings.title": "Settings",
+  "settings.language": "Language",
+  "settings.theme": "Theme",
+  "settings.config_location": "Show config file location",
+  "settings.reset": "Reset to Defaults",
+  "settings.reset_confirm_title": "Reset settings?",
+  "settings.reset_confirm_body": "This will restore all settings to their defaults."
+}

@@ -5,6 +5,7 @@ from qframelesswindow import AcrylicWindow
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QStackedWidget, QVBoxLayout
 from qfluentwidgets import NavigationInterface, NavigationItemPosition, FluentIcon 
 from tools_gui.services import user_config
+from tools_gui.services.i18n_service import I18nService
 from tools_gui.ui.pages.keygen_page import KeygenPage
 from tools_gui.ui.pages.settings_page import SettingsPage
 from tools_gui.ui.widgets.status_bar import StatusBar
@@ -22,6 +23,7 @@ class MainWindow(AcrylicWindow):
         self.titleBar.closeBtn.setStyleSheet("qproperty-normalColor: white; qproperty-hoverColor: red;")
 
         self.config = user_config.load_config()
+        self.i18n = I18nService(language=self.config.language)
         self.pages: list = []
         self.nav_routes: dict[str, QWidget] = {}
 
@@ -61,8 +63,8 @@ class MainWindow(AcrylicWindow):
         )
 
     def init_pages(self) -> None:
-        self.keygen_page = KeygenPage(self.config, parent=self)
-        self.settings_page = SettingsPage(self.config, self, parent=self)
+        self.keygen_page = KeygenPage(self.i18n, self.config, parent=self)
+        self.settings_page = SettingsPage(self.i18n, self.config, self, parent=self)
 
         self.settings_page.languageChanged.connect(self.on_language_changed)
 
@@ -72,25 +74,25 @@ class MainWindow(AcrylicWindow):
 
 
     def on_language_changed(self, language: str) -> None:
-        # self.i18n.set_language(language)
+        self.i18n.set_language(language)
         self.config.language = language
         self.retranslate_ui()
 
 
     def retranslate_ui(self) -> None:
-        self.setWindowTitle("ripperdoc")
-        self.set_nav_item_text(self.keygen_page.objectName(), "Keygen")
-        self.set_nav_item_text(self.settings_page.objectName(), "Settings")
-        for page in self._pages:
+        self.setWindowTitle(self.i18n.t("app.title"))
+        self.set_nav_item_text(self.keygen_page.objectName(), self.i18n.t("nav.keygen"))
+        self.set_nav_item_text(self.settings_page.objectName(), self.i18n.t("nav.settings"))
+        for page in self.pages:
             page.retranslate_ui()
 
 
     def init_nav(self) -> None:
-        self.add_nav_item(self.keygen_page, FluentIcon.VPN, "Key generation")
+        self.add_nav_item(self.keygen_page, FluentIcon.VPN, self.i18n.t("nav.keygen"))
         self.add_nav_item(
             self.settings_page,
             FluentIcon.SETTING,
-            "Settings",
+            self.i18n.t("nav.settings"),
             position=NavigationItemPosition.BOTTOM,
         )
 

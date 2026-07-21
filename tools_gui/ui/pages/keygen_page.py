@@ -21,40 +21,44 @@ KEY_SIZES_BITS = (128, 192, 256)
 
 
 class KeygenPage(QWidget):
-    def __init__(self, config, parent=None) -> None:
+
+    def __init__(self, i18n, config, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("KeygenPage")
+        self.i18n = i18n
         self.config = config
-        self._raw_key: bytes | None = None
+
+        self.raw_key: bytes | None = None
         self.raw_nonce: bytes | None = None
+
         self.build_ui()
         self.restore_last_settings()
         self.connect_signals()
-
 
     def build_ui(self) -> None:
         root = QVBoxLayout(self)
         root.setContentsMargins(32, 24, 32, 24)
         root.setSpacing(16)
-
-        self.title_label = TitleLabel("Keygen", self)
+        
+        # TITLE
+        self.title_label = TitleLabel(self.i18n.t("keygen.title"), self)
         root.addWidget(self.title_label)
-
-        # ALGORITHM
+        
         row = QHBoxLayout()
         row.setSpacing(24)
 
+        # ALGORITHM
         algo_col = QVBoxLayout()
-        self.algorithm_label = StrongBodyLabel("Algorithm", self)
+        self.algorithm_label = StrongBodyLabel(self.i18n.t("keygen.algorithm"), self)
         self.algorithm_combo = ComboBox(self)
         self.algorithm_combo.addItems(list(ALGORITHMS))
         algo_col.addWidget(self.algorithm_label)
         algo_col.addWidget(self.algorithm_combo)
         row.addLayout(algo_col)
 
-        # KEY SIZE
+        # SIZE
         size_col = QVBoxLayout()
-        self.key_size_label = StrongBodyLabel("Key size", self)
+        self.key_size_label = StrongBodyLabel(self.i18n.t("keygen.key_size"), self)
         self.key_size_combo = ComboBox(self)
         self.key_size_combo.addItems([str(bits) for bits in KEY_SIZES_BITS])
         size_col.addWidget(self.key_size_label)
@@ -63,7 +67,7 @@ class KeygenPage(QWidget):
 
         # FORMAT
         format_col = QVBoxLayout()
-        self.format_label = StrongBodyLabel("Format", self)
+        self.format_label = StrongBodyLabel(self.i18n.t("keygen.format"), self)
         self.format_combo = ComboBox(self)
         self.format_combo.addItems(list(key_format.SUPPORTED_FORMATS))
         format_col.addWidget(self.format_label)
@@ -74,37 +78,37 @@ class KeygenPage(QWidget):
         root.addLayout(row)
 
         # EXECUTE
-        self.execute_button = PrimaryPushButton("Execute", self)
+        self.execute_button = PrimaryPushButton(self.i18n.t("keygen.execute"), self)
         root.addWidget(self.execute_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        # KEY
-        self.key_label = StrongBodyLabel("Encrypt", self)
+        # KEY TEXTBOX
+        self.key_label = StrongBodyLabel(self.i18n.t("keygen.encryption_key"), self)
         root.addWidget(self.key_label)
 
         key_row = QHBoxLayout()
         self.key_edit = PlainTextEdit(self)
         self.key_edit.setFixedHeight(70)
-        self.key_copy_button = PushButton("Copy", self)
+        self.key_copy_button = PushButton(self.i18n.t("common.copy"), self)
         key_row.addWidget(self.key_edit, stretch=1)
         key_row.addWidget(self.key_copy_button, alignment=Qt.AlignmentFlag.AlignTop)
         root.addLayout(key_row)
 
-        # NONCE
-        self.nonce_label = StrongBodyLabel("Nonce", self)
+        # NONCE TEXTBOX
+        self.nonce_label = StrongBodyLabel(self.i18n.t("keygen.nonce"), self)
         root.addWidget(self.nonce_label)
 
         nonce_row = QHBoxLayout()
         self.nonce_edit = PlainTextEdit(self)
         self.nonce_edit.setFixedHeight(70)
-        self.nonce_copy_button = PushButton("Copy", self)
+        self.nonce_copy_button = PushButton(self.i18n.t("common.copy"), self)
         nonce_row.addWidget(self.nonce_edit, stretch=1)
         nonce_row.addWidget(self.nonce_copy_button, alignment=Qt.AlignmentFlag.AlignTop)
         root.addLayout(nonce_row)
 
         # EXPORT
         export_row = QHBoxLayout()
-        self.export_hex_button = PushButton("Export HEX", self)
-        self.export_pem_button = PushButton("Export PEM", self)
+        self.export_hex_button = PushButton(self.i18n.t("keygen.export_hex"), self)
+        self.export_pem_button = PushButton(self.i18n.t("keygen.export_pem"), self)
         for btn in (
             self.export_hex_button,
             self.export_pem_button,
@@ -134,14 +138,16 @@ class KeygenPage(QWidget):
         self.export_hex_button.clicked.connect(lambda: self.on_export(key_format.FORMAT_HEX))
         self.export_pem_button.clicked.connect(lambda: self.on_export(key_format.FORMAT_PEM))
 
-
     def on_execute(self) -> None:
         key_size_bits = int(self.key_size_combo.currentText())
         material = keygen.generate_aes_key(key_size_bits=key_size_bits)
+
         self.raw_key = material.key
         self.raw_nonce = material.nonce
+
         self.config.keygen["key_size"] = key_size_bits
         self.config.keygen["format"] = self.format_combo.currentText()
+
         self.render_current_format()
 
     def on_format_changed(self, new_format: str) -> None:
@@ -153,7 +159,7 @@ class KeygenPage(QWidget):
         key_text = self.key_edit.toPlainText()
         if key_text.strip():
             try:
-                self._raw_key = key_format.decode(key_text, previous_format)
+                self.raw_key = key_format.decode(key_text, previous_format)
             except key_format.KeyFormatError:
                 pass
 
@@ -166,16 +172,19 @@ class KeygenPage(QWidget):
 
     def render_current_format(self) -> None:
         fmt = self.format_combo.currentText()
-        if self._raw_key is not None:
-            self.key_edit.setPlainText(key_format.encode(self._raw_key, fmt))
+
+        if self.raw_key is not None:
+            self.key_edit.setPlainText(key_format.encode(self.raw_key, fmt))
         if self.raw_nonce is not None:
             self.nonce_edit.setPlainText(key_format.encode(self.raw_nonce, fmt))
 
     def copy_to_clipboard(self, edit: PlainTextEdit) -> None:
+        from PySide6.QtWidgets import QApplication
+
         QApplication.clipboard().setText(edit.toPlainText())
         InfoBar.success(
-            title="Success",
-            content="Copied",
+            title=self.i18n.t("common.success"),
+            content=self.i18n.t("common.copied"),
             position=InfoBarPosition.TOP,
             duration=1500,
             parent=self,
@@ -183,10 +192,11 @@ class KeygenPage(QWidget):
 
     def on_export(self, export_format: str) -> None:
         self.try_absorb_edits(previous_format=self.format_combo.currentText())
-        if self._raw_key is None:
+
+        if self.raw_key is None:
             InfoBar.warning(
-                title="Error",
-                content="No key yet",
+                title=self.i18n.t("common.error"),
+                content=self.i18n.t("keygen.no_key_yet"),
                 position=InfoBarPosition.TOP,
                 duration=2500,
                 parent=self,
@@ -194,20 +204,33 @@ class KeygenPage(QWidget):
             return
 
         default_dir = self.config.last_used.get("output_dir", "")
-        path, _ = QFileDialog.getSaveFileName(self, "Save as", default_dir)
+        path, _ = QFileDialog.getSaveFileName(self, self.i18n.t("common.save_as"), default_dir)
         if not path:
             return
 
-        data = key_format.encode_bytes_for_export(self._raw_key, export_format)
+        data = key_format.encode_bytes_for_export(self.raw_key, export_format)
         with open(path, "wb") as f:
             f.write(data)
 
         self.config.last_used["output_dir"] = str(__import__("pathlib").Path(path).parent)
 
         InfoBar.success(
-            title="Success",
-            content="Exported".format(path=path),
+            title=self.i18n.t("common.success"),
+            content=self.i18n.t("keygen.exported").format(path=path),
             position=InfoBarPosition.TOP,
             duration=2500,
             parent=self,
         )
+
+    def retranslate_ui(self) -> None:
+        self.title_label.setText(self.i18n.t("keygen.title"))
+        self.algorithm_label.setText(self.i18n.t("keygen.algorithm"))
+        self.key_size_label.setText(self.i18n.t("keygen.key_size"))
+        self.format_label.setText(self.i18n.t("keygen.format"))
+        self.execute_button.setText(self.i18n.t("keygen.execute"))
+        self.key_label.setText(self.i18n.t("keygen.encryption_key"))
+        self.nonce_label.setText(self.i18n.t("keygen.nonce"))
+        self.key_copy_button.setText(self.i18n.t("common.copy"))
+        self.nonce_copy_button.setText(self.i18n.t("common.copy"))
+        self.export_hex_button.setText(self.i18n.t("keygen.export_hex"))
+        self.export_pem_button.setText(self.i18n.t("keygen.export_pem"))

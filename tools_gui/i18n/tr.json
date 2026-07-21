@@ -1,0 +1,42 @@
+{
+  "app.title": "RIPPERDOC",
+
+  "nav.keygen": "Anahtar Üretimi",
+  "nav.sign_encrypt": "İmzala ve Şifrele",
+  "nav.verify": "İmza Doğrulama",
+  "nav.patch_header": "Başlık Yamalama",
+  "nav.merge": "Birleştir",
+  "nav.settings": "Ayarlar",
+
+  "common.browse": "Göz At...",
+  "common.copy": "Kopyala",
+  "common.copied": "Panoya kopyalandı",
+  "common.save_as": "Farklı Kaydet...",
+  "common.execute": "ÇALIŞTIR",
+  "common.success": "Başarılı",
+  "common.error": "Hata",
+  "common.select_file": "Dosya Seç",
+
+  "keygen.title": "Anahtar Üretimi",
+  "keygen.algorithm": "ALGORİTMA:",
+  "keygen.key_size": "ANAHTAR BOYUTU (bit):",
+  "keygen.format": "GÖRÜNTÜLEME BİÇİMİ:",
+  "keygen.execute": "ÜRETİMİ ÇALIŞTIR",
+  "keygen.encryption_key": "ŞİFRELEME ANAHTARI:",
+  "keygen.nonce": "BAŞLANGIÇ VEKTÖRÜ (IV):",
+  "keygen.export_hex": "Hex Olarak Dışa Aktar",
+  "keygen.export_base64": "Base64 Olarak Dışa Aktar",
+  "keygen.export_pem": "PEM Olarak Dışa Aktar",
+  "keygen.export_der": "DER Olarak Dışa Aktar",
+  "keygen.no_key_yet": "Önce bir anahtar üretin veya yapıştırın.",
+  "keygen.exported": "{path} konumuna aktarıldı",
+  "keygen.invalid_paste": "Yapıştırılan değer {format} olarak ayrıştırılamadı.",
+
+  "settings.title": "Ayarlar",
+  "settings.language": "Dil",
+  "settings.theme": "Tema",
+  "settings.config_location": "Yapılandırma dosyası konumunu göster",
+  "settings.reset": "Varsayılanlara Sıfırla",
+  "settings.reset_confirm_title": "Ayarlar sıfırlansın mı?",
+  "settings.reset_confirm_body": "Bu işlem tüm ayarları varsayılan değerlerine döndürecektir."
+}
