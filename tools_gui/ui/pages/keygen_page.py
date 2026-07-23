@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QApplication, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QSizePolicy
 from qfluentwidgets import (
     TitleLabel,
     StrongBodyLabel,
@@ -36,88 +36,129 @@ class KeygenPage(QWidget):
         self.connect_signals()
 
     def build_ui(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(32, 24, 32, 24)
-        root.setSpacing(16)
-        
+        mainLayout = QHBoxLayout(self)
+
+        # Global center align
+        mainLayout.addStretch()
+
+        content = QWidget(self)
+        content.setMaximumWidth(900)
+
+        root = QVBoxLayout(content)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(24)
+
+        mainLayout.addWidget(content)
+        mainLayout.addStretch()
+
         # TITLE
         self.title_label = TitleLabel(self.i18n.t("keygen.title"), self)
         root.addWidget(self.title_label)
-        
-        row = QHBoxLayout()
-        row.setSpacing(24)
+
+        root.addSpacing(30)
+
+        # OPTIONS
+        optionsRow = QHBoxLayout()
+        optionsRow.setSpacing(24)
 
         # ALGORITHM
-        algo_col = QVBoxLayout()
+        algoCol = QVBoxLayout()
+
         self.algorithm_label = StrongBodyLabel(self.i18n.t("keygen.algorithm"), self)
         self.algorithm_combo = ComboBox(self)
         self.algorithm_combo.addItems(list(ALGORITHMS))
-        algo_col.addWidget(self.algorithm_label)
-        algo_col.addWidget(self.algorithm_combo)
-        row.addLayout(algo_col)
 
-        # SIZE
-        size_col = QVBoxLayout()
+        algoCol.addWidget(self.algorithm_label)
+        algoCol.addWidget(self.algorithm_combo)
+
+        optionsRow.addLayout(algoCol)
+
+        # KEY SIZE
+        sizeCol = QVBoxLayout()
+
         self.key_size_label = StrongBodyLabel(self.i18n.t("keygen.key_size"), self)
         self.key_size_combo = ComboBox(self)
         self.key_size_combo.addItems([str(bits) for bits in KEY_SIZES_BITS])
-        size_col.addWidget(self.key_size_label)
-        size_col.addWidget(self.key_size_combo)
-        row.addLayout(size_col)
+
+        sizeCol.addWidget(self.key_size_label)
+        sizeCol.addWidget(self.key_size_combo)
+
+        optionsRow.addLayout(sizeCol)
 
         # FORMAT
-        format_col = QVBoxLayout()
+        formatCol = QVBoxLayout()
+
         self.format_label = StrongBodyLabel(self.i18n.t("keygen.format"), self)
         self.format_combo = ComboBox(self)
         self.format_combo.addItems(list(key_format.SUPPORTED_FORMATS))
-        format_col.addWidget(self.format_label)
-        format_col.addWidget(self.format_combo)
-        row.addLayout(format_col)
 
-        row.addStretch(1)
-        root.addLayout(row)
+        formatCol.addWidget(self.format_label)
+        formatCol.addWidget(self.format_combo)
+
+        optionsRow.addLayout(formatCol)
+        optionsRow.addStretch()
+
+        root.addLayout(optionsRow)
+
+        root.addSpacing(30)
 
         # EXECUTE
         self.execute_button = PrimaryPushButton(self.i18n.t("keygen.execute"), self)
-        root.addWidget(self.execute_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        root.addWidget(self.execute_button, alignment=Qt.AlignLeft)
 
-        # KEY TEXTBOX
+        root.addSpacing(30)
+
+        # KEY
         self.key_label = StrongBodyLabel(self.i18n.t("keygen.encryption_key"), self)
         root.addWidget(self.key_label)
 
-        key_row = QHBoxLayout()
-        self.key_edit = PlainTextEdit(self)
-        self.key_edit.setFixedHeight(70)
-        self.key_copy_button = PushButton(self.i18n.t("common.copy"), self)
-        key_row.addWidget(self.key_edit, stretch=1)
-        key_row.addWidget(self.key_copy_button, alignment=Qt.AlignmentFlag.AlignTop)
-        root.addLayout(key_row)
+        keyRow = QHBoxLayout()
 
-        # NONCE TEXTBOX
+        self.key_edit = PlainTextEdit(self)
+        self.key_edit.setMinimumHeight(70)
+        self.key_edit.setMinimumWidth(500)
+        self.key_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.key_copy_button = PushButton(self.i18n.t("common.copy"), self)
+        self.key_copy_button.setFixedWidth(90)
+
+        keyRow.addWidget(self.key_edit, stretch=1)
+        keyRow.addWidget(self.key_copy_button, alignment=Qt.AlignTop)
+
+        root.addLayout(keyRow)
+
+        # NONCE
         self.nonce_label = StrongBodyLabel(self.i18n.t("keygen.nonce"), self)
         root.addWidget(self.nonce_label)
 
-        nonce_row = QHBoxLayout()
+        nonceRow = QHBoxLayout()
+
         self.nonce_edit = PlainTextEdit(self)
-        self.nonce_edit.setFixedHeight(70)
+        self.nonce_edit.setMinimumHeight(70)
+        self.nonce_edit.setMinimumWidth(500)
+        self.nonce_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
         self.nonce_copy_button = PushButton(self.i18n.t("common.copy"), self)
-        nonce_row.addWidget(self.nonce_edit, stretch=1)
-        nonce_row.addWidget(self.nonce_copy_button, alignment=Qt.AlignmentFlag.AlignTop)
-        root.addLayout(nonce_row)
+        self.nonce_copy_button.setFixedWidth(90)
+
+        nonceRow.addWidget(self.nonce_edit, stretch=1)
+        nonceRow.addWidget(self.nonce_copy_button, alignment=Qt.AlignTop)
+
+        root.addLayout(nonceRow)
 
         # EXPORT
-        export_row = QHBoxLayout()
-        self.export_hex_button = PushButton(self.i18n.t("keygen.export_hex"), self)
-        self.export_pem_button = PushButton(self.i18n.t("keygen.export_pem"), self)
-        for btn in (
-            self.export_hex_button,
-            self.export_pem_button,
-        ):
-            export_row.addWidget(btn)
-        export_row.addStretch(1)
-        root.addLayout(export_row)
+        exportRow = QHBoxLayout()
 
-        root.addStretch(1)
+        self.export_hex_button = PrimaryPushButton(self.i18n.t("keygen.export_hex"), self)
+        self.export_pem_button = PrimaryPushButton(self.i18n.t("keygen.export_pem"), self)
+
+        exportRow.addWidget(self.export_hex_button)
+        exportRow.addWidget(self.export_pem_button)
+        exportRow.addStretch()
+
+        root.addLayout(exportRow)
+
+        root.addStretch()
 
     def restore_last_settings(self) -> None:
         keygen_cfg = self.config.keygen

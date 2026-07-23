@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from qframelesswindow import AcrylicWindow
@@ -9,6 +9,8 @@ from tools_gui.services.i18n_service import I18nService
 from tools_gui.ui.pages.keygen_page import KeygenPage
 from tools_gui.ui.pages.settings_page import SettingsPage
 from tools_gui.ui.widgets.status_bar import StatusBar
+from tools_gui.ui.pages.merge_page import MergePage
+from tools_gui.ui.pages.sign_encrypt_page import SignEncryptPage
 
 class MainWindow(AcrylicWindow):
     def __init__(self) -> None:
@@ -64,11 +66,13 @@ class MainWindow(AcrylicWindow):
 
     def init_pages(self) -> None:
         self.keygen_page = KeygenPage(self.i18n, self.config, parent=self)
+        self.merge_page = MergePage(self.i18n, self.config, parent=self)
         self.settings_page = SettingsPage(self.i18n, self.config, self, parent=self)
+        self.sign_encrypt_page = SignEncryptPage(self.i18n, self.config, parent=self)
 
         self.settings_page.languageChanged.connect(self.on_language_changed)
 
-        self.pages = [self.keygen_page, self.settings_page]
+        self.pages = [self.keygen_page, self.settings_page, self.merge_page, self.sign_encrypt_page]
         for page in self.pages:
             self.stackedWidget.addWidget(page)
 
@@ -82,19 +86,19 @@ class MainWindow(AcrylicWindow):
     def retranslate_ui(self) -> None:
         self.setWindowTitle(self.i18n.t("app.title"))
         self.set_nav_item_text(self.keygen_page.objectName(), self.i18n.t("nav.keygen"))
+        self.set_nav_item_text(self.merge_page.objectName(), self.i18n.t("nav.merge"))
         self.set_nav_item_text(self.settings_page.objectName(), self.i18n.t("nav.settings"))
+        self.set_nav_item_text(self.sign_encrypt_page.objectName(), self.i18n.t("nav.sign_encrypt"))
         for page in self.pages:
             page.retranslate_ui()
 
-
+    # NAVIGATION LEFT PANEL
     def init_nav(self) -> None:
         self.add_nav_item(self.keygen_page, FluentIcon.VPN, self.i18n.t("nav.keygen"))
-        self.add_nav_item(
-            self.settings_page,
-            FluentIcon.SETTING,
-            self.i18n.t("nav.settings"),
-            position=NavigationItemPosition.BOTTOM,
-        )
+        self.add_nav_item(self.merge_page, FluentIcon.LIBRARY, self.i18n.t("nav.merge"))
+        self.add_nav_item(self.sign_encrypt_page, FluentIcon.CERTIFICATE, self.i18n.t("nav.sign_encrypt"))
+        self.add_nav_item(self.settings_page, FluentIcon.SETTING, self.i18n.t("nav.settings"),
+                                                        position=NavigationItemPosition.BOTTOM)
 
         self.stackedWidget.setCurrentWidget(self.keygen_page)
         self.navigationInterface.setCurrentItem(self.keygen_page.objectName())

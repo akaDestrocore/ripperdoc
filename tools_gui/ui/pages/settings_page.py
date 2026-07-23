@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
+from __future__ import annotations
 
 import os
 import subprocess
 import sys
 
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy
 from qfluentwidgets import (
     ComboBox,
     HyperlinkButton,
@@ -40,36 +40,68 @@ class SettingsPage(QWidget):
         self.connect_signals()
 
     def build_ui(self) -> None:
-        root = QVBoxLayout(self)
-        root.setContentsMargins(32, 24, 32, 24)
-        root.setSpacing(16)
+        mainLayout = QHBoxLayout(self)
 
+        # Global center align
+        mainLayout.addStretch()
+
+        content = QWidget(self)
+        content.setMaximumWidth(900)
+
+
+        root = QVBoxLayout(content)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(24)
+
+        mainLayout.addWidget(content)
+        mainLayout.addStretch()
+
+        # TITLE
         self.title_label = TitleLabel(self.i18n.t("settings.title"), self)
         root.addWidget(self.title_label)
 
+        # OPTIONS
+        optionsRow = QHBoxLayout()
+        optionsRow.setSpacing(24)
+
+        mainCol = QVBoxLayout()
+
         self.language_label = StrongBodyLabel(self.i18n.t("settings.language"), self)
-        root.addWidget(self.language_label)
 
         self.language_combo = ComboBox(self)
         self.language_combo.addItems([LANGUAGE_DISPLAY[c] for c in LANGUAGE_CODES])
         self.language_combo.setCurrentText(LANGUAGE_DISPLAY[self.i18n.language])
-        root.addWidget(self.language_combo)
 
+        mainCol.addWidget(self.language_label)
+        mainCol.addWidget(self.language_combo)
+
+        # THEME OPTIONS
         self.theme_label = StrongBodyLabel(self.i18n.t("settings.theme"), self)
-        root.addWidget(self.theme_label)
+        mainCol.addWidget(self.theme_label)
 
         self.theme_combo = ComboBox(self)
         self.theme_combo.addItems(list(THEMES))
         self.theme_combo.setCurrentText(self.config.theme.capitalize())
-        root.addWidget(self.theme_combo)
+        mainCol.addWidget(self.theme_combo)
 
-        self.config_location_button = HyperlinkButton(
-            url="", text=self.i18n.t("settings.config_location"), parent=self
-        )
-        root.addWidget(self.config_location_button)
+        optionsRow.addLayout(mainCol)
+        optionsRow.addStretch()
+        root.addLayout(optionsRow)
+
+        # BOTTOM
+        bottomRow = QHBoxLayout()
+        bottomRow.setSpacing(24)
+
+        self.config_location_button = HyperlinkButton(url="", text=self.i18n.t("settings.config_location"), parent=self)
+        mainCol.addWidget(self.config_location_button)
 
         self.reset_button = PushButton(self.i18n.t("settings.reset"), self)
-        root.addWidget(self.reset_button)
+        self.reset_button.setFixedWidth(200)
+        mainCol.addWidget(self.reset_button, alignment=Qt.AlignCenter)
+
+        bottomRow.addLayout(mainCol)
+        bottomRow.addStretch()
+        root.addLayout(bottomRow)
 
         root.addStretch(1)
 
