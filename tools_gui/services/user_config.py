@@ -5,7 +5,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from platformdirs import user_config_dir
 
-
 APP_NAME = "ripperdoc"
 
 DEFAULT_LAST_USED = {

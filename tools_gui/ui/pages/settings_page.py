@@ -64,7 +64,7 @@ class SettingsPage(QWidget):
         optionsRow = QHBoxLayout()
         optionsRow.setSpacing(24)
 
-        mainCol = QVBoxLayout()
+        optionsCol = QVBoxLayout()
 
         self.language_label = StrongBodyLabel(self.i18n.t("settings.language"), self)
 
@@ -72,19 +72,19 @@ class SettingsPage(QWidget):
         self.language_combo.addItems([LANGUAGE_DISPLAY[c] for c in LANGUAGE_CODES])
         self.language_combo.setCurrentText(LANGUAGE_DISPLAY[self.i18n.language])
 
-        mainCol.addWidget(self.language_label)
-        mainCol.addWidget(self.language_combo)
+        optionsCol.addWidget(self.language_label)
+        optionsCol.addWidget(self.language_combo)
 
         # THEME OPTIONS
         self.theme_label = StrongBodyLabel(self.i18n.t("settings.theme"), self)
-        mainCol.addWidget(self.theme_label)
+        optionsCol.addWidget(self.theme_label)
 
         self.theme_combo = ComboBox(self)
         self.theme_combo.addItems(list(THEMES))
         self.theme_combo.setCurrentText(self.config.theme.capitalize())
-        mainCol.addWidget(self.theme_combo)
+        optionsCol.addWidget(self.theme_combo)
 
-        optionsRow.addLayout(mainCol)
+        optionsRow.addLayout(optionsCol)
         optionsRow.addStretch()
         root.addLayout(optionsRow)
 
@@ -92,14 +92,16 @@ class SettingsPage(QWidget):
         bottomRow = QHBoxLayout()
         bottomRow.setSpacing(24)
 
+        bottomCol = QVBoxLayout()
+
         self.config_location_button = HyperlinkButton(url="", text=self.i18n.t("settings.config_location"), parent=self)
-        mainCol.addWidget(self.config_location_button)
+        bottomCol.addWidget(self.config_location_button)
 
         self.reset_button = PushButton(self.i18n.t("settings.reset"), self)
         self.reset_button.setFixedWidth(200)
-        mainCol.addWidget(self.reset_button, alignment=Qt.AlignCenter)
+        bottomCol.addWidget(self.reset_button, alignment=Qt.AlignCenter)
 
-        bottomRow.addLayout(mainCol)
+        bottomRow.addLayout(bottomCol)
         bottomRow.addStretch()
         root.addLayout(bottomRow)
 
@@ -125,7 +127,7 @@ class SettingsPage(QWidget):
         config_dir.mkdir(parents=True, exist_ok=True)
 
         if sys.platform.startswith("win"):
-            os.startfile(str(config_dir))
+            subprocess.Popen(["explorer.exe", str(config_dir)])
         elif sys.platform == "darwin":
             subprocess.Popen(["open", str(config_dir)])
         else:

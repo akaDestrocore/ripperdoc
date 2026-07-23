@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-DEFAULT_LANGUAGE = "en"
+DEFAULT_LANGUAGE = "tr"
 FALLBACK_LANGUAGE = "en"
 SUPPORTED_LANGUAGES = ("en", "tr")
 
