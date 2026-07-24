@@ -1,6 +1,19 @@
+#!/usr/bin/env python
+
+"""
+File: settings.py
+
+Brief:
+    Application settings and configuration management.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 
@@ -15,13 +28,14 @@ from qfluentwidgets import (
     PushButton,
     StrongBodyLabel,
     TitleLabel,
+    CaptionLabel
 )
 
-from tools_gui.services import user_config
+from tools_gui.services import user_config, build_info
 
 LANGUAGE_CODES = ("en", "tr")
 LANGUAGE_DISPLAY = {"en": "English", "tr": "Türkçe"}
-THEMES = ("Acrylic",)
+THEMES = ("Acrylic", "Mica", "Aero")
 
 
 class SettingsPage(QWidget):
@@ -38,6 +52,7 @@ class SettingsPage(QWidget):
 
         self.build_ui()
         self.connect_signals()
+
 
     def build_ui(self) -> None:
         mainLayout = QHBoxLayout(self)
@@ -88,24 +103,32 @@ class SettingsPage(QWidget):
         optionsRow.addStretch()
         root.addLayout(optionsRow)
 
-        # BOTTOM
-        bottomRow = QHBoxLayout()
-        bottomRow.setSpacing(24)
+        # CONFIG
+        configRow = QHBoxLayout()
+        configRow.setSpacing(24)
 
-        bottomCol = QVBoxLayout()
+        configCol = QVBoxLayout()
 
         self.config_location_button = HyperlinkButton(url="", text=self.i18n.t("settings.config_location"), parent=self)
-        bottomCol.addWidget(self.config_location_button)
+        configCol.addWidget(self.config_location_button, alignment=Qt.AlignCenter)
 
         self.reset_button = PushButton(self.i18n.t("settings.reset"), self)
         self.reset_button.setFixedWidth(200)
-        bottomCol.addWidget(self.reset_button, alignment=Qt.AlignCenter)
+        configCol.addWidget(self.reset_button, alignment=Qt.AlignCenter)
 
-        bottomRow.addLayout(bottomCol)
-        bottomRow.addStretch()
-        root.addLayout(bottomRow)
+        configRow.addLayout(configCol)
+        configRow.setAlignment(Qt.AlignCenter)
+        # configRow.addStretch()
+
+        # BUILD
+        info = build_info.get_build_info()
+        self.build_info_label = CaptionLabel(f"build: {info.git_sha}", self)
+        self.build_info_label.setAlignment(Qt.AlignCenter)
 
         root.addStretch(1)
+        root.addLayout(configRow)
+        root.addWidget(self.build_info_label)
+
 
     def connect_signals(self) -> None:
         self.language_combo.currentTextChanged.connect(self.on_language_combo_changed)
@@ -113,14 +136,19 @@ class SettingsPage(QWidget):
         self.config_location_button.clicked.connect(self.on_showconfig_location)
         self.reset_button.clicked.connect(self.on_reset_clicked)
 
+
     def on_language_combo_changed(self, display_text: str) -> None:
         for code, display in LANGUAGE_DISPLAY.items():
             if display == display_text:
                 self.languageChanged.emit(code)
                 return
 
+
     def on_theme_combo_changed(self, theme_text: str) -> None:
-        self.config.theme = theme_text.lower()
+        theme = theme_text.lower()
+        self.config.theme = theme
+        self.main_window.apply_window_theme(theme)
+
 
     def on_showconfig_location(self) -> None:
         config_dir = user_config.get_config_dir()
@@ -132,6 +160,7 @@ class SettingsPage(QWidget):
             subprocess.Popen(["open", str(config_dir)])
         else:
             subprocess.Popen(["xdg-open", str(config_dir)])
+
 
     def on_reset_clicked(self) -> None:
         box = MessageBox(
@@ -160,6 +189,7 @@ class SettingsPage(QWidget):
             duration=2000,
             parent=self,
         )
+
 
     def retranslate_ui(self) -> None:
         self.title_label.setText(self.i18n.t("settings.title"))

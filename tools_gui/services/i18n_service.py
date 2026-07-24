@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+"""
+File: i18n_service.py
+
+Brief:
+    This module provides a service for internationalization
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
 import json

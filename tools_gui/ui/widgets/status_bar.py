@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+"""
+File: status_bar.py
+
+Brief:
+    A simple status bar widget for a Qt application.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
 from PySide6.QtCore import Qt

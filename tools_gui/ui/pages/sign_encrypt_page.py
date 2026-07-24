@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+"""
+File: sign_encrypt_page.py
+
+Brief:
+    Binary encryption and signing page for the GUI application.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

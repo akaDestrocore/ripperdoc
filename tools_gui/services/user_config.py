@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+"""
+File: user_config.py
+
+Brief:
+    This file contains the user configuration for the app.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
 import json
@@ -24,6 +38,7 @@ DEFAULT_KEYGEN = {
 DEFAULT_WINDOW = {
     "width": 1100,
     "height": 720,
+    "maximized": False,
 }
 
 @dataclass
@@ -49,7 +64,7 @@ class AppConfig:
     
 
 def get_config_dir() -> Path:
-    return Path(user_config_dir(APP_NAME))
+    return Path(user_config_dir(APP_NAME, appauthor=False))
 
 
 def get_config_path() -> Path:

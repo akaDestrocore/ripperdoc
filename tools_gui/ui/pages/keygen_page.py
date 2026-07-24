@@ -1,7 +1,23 @@
+#!/usr/bin/env python
+
+"""
+File: keygen_page.py
+
+Brief:
+    AES key generation page for the GUI application.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFileDialog, QSizePolicy, QApplication
 from qfluentwidgets import (
     TitleLabel,
     StrongBodyLabel,
@@ -84,18 +100,6 @@ class KeygenPage(QWidget):
         sizeCol.addWidget(self.key_size_combo)
 
         optionsRow.addLayout(sizeCol)
-
-        # FORMAT
-        formatCol = QVBoxLayout()
-
-        self.format_label = StrongBodyLabel(self.i18n.t("keygen.format"), self)
-        self.format_combo = ComboBox(self)
-        self.format_combo.addItems(list(key_format.SUPPORTED_FORMATS))
-
-        formatCol.addWidget(self.format_label)
-        formatCol.addWidget(self.format_combo)
-
-        optionsRow.addLayout(formatCol)
         optionsRow.addStretch()
 
         root.addLayout(optionsRow)
@@ -119,11 +123,17 @@ class KeygenPage(QWidget):
         self.key_edit.setMinimumWidth(500)
         self.key_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        keyButtonsCol = QVBoxLayout()
         self.key_copy_button = PushButton(self.i18n.t("common.copy"), self)
         self.key_copy_button.setFixedWidth(90)
+        self.export_key_button = PushButton(self.i18n.t("common.export"), self)
+        self.export_key_button.setFixedWidth(90)
+        keyButtonsCol.addWidget(self.key_copy_button, alignment=Qt.AlignTop)
+        keyButtonsCol.addWidget(self.export_key_button, alignment=Qt.AlignTop)
+        keyButtonsCol.addStretch()
 
         keyRow.addWidget(self.key_edit, stretch=1)
-        keyRow.addWidget(self.key_copy_button, alignment=Qt.AlignTop)
+        keyRow.addLayout(keyButtonsCol)
 
         root.addLayout(keyRow)
 
@@ -138,25 +148,19 @@ class KeygenPage(QWidget):
         self.nonce_edit.setMinimumWidth(500)
         self.nonce_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        nonceButtonsCol = QVBoxLayout()
         self.nonce_copy_button = PushButton(self.i18n.t("common.copy"), self)
         self.nonce_copy_button.setFixedWidth(90)
+        self.export_nonce_button = PushButton(self.i18n.t("common.export"), self)
+        self.nonce_copy_button.setFixedWidth(90)
+        nonceButtonsCol.addWidget(self.nonce_copy_button, alignment=Qt.AlignTop)
+        nonceButtonsCol.addWidget(self.export_nonce_button, alignment=Qt.AlignTop)
+        nonceButtonsCol.addStretch()
 
         nonceRow.addWidget(self.nonce_edit, stretch=1)
-        nonceRow.addWidget(self.nonce_copy_button, alignment=Qt.AlignTop)
+        nonceRow.addLayout(nonceButtonsCol)
 
         root.addLayout(nonceRow)
-
-        # EXPORT
-        exportRow = QHBoxLayout()
-
-        self.export_hex_button = PrimaryPushButton(self.i18n.t("keygen.export_hex"), self)
-        self.export_pem_button = PrimaryPushButton(self.i18n.t("keygen.export_pem"), self)
-
-        exportRow.addWidget(self.export_hex_button)
-        exportRow.addWidget(self.export_pem_button)
-        exportRow.addStretch()
-
-        root.addLayout(exportRow)
 
         root.addStretch()
 
@@ -166,18 +170,13 @@ class KeygenPage(QWidget):
         if size_text in [str(b) for b in KEY_SIZES_BITS]:
             self.key_size_combo.setCurrentText(size_text)
 
-        fmt = keygen_cfg.get("format", key_format.FORMAT_HEX)
-        if fmt in key_format.SUPPORTED_FORMATS:
-            self.format_combo.setCurrentText(fmt)
-
     def connect_signals(self) -> None:
         self.execute_button.clicked.connect(self.on_execute)
-        self.format_combo.currentTextChanged.connect(self.on_format_changed)
         self.key_copy_button.clicked.connect(lambda: self.copy_to_clipboard(self.key_edit))
         self.nonce_copy_button.clicked.connect(lambda: self.copy_to_clipboard(self.nonce_edit))
 
-        self.export_hex_button.clicked.connect(lambda: self.on_export(key_format.FORMAT_HEX))
-        self.export_pem_button.clicked.connect(lambda: self.on_export(key_format.FORMAT_PEM))
+        self.export_key_button.clicked.connect(lambda: self.on_export(is_key=True))
+        self.export_nonce_button.clicked.connect(lambda: self.on_export(is_key=False))
 
     def on_execute(self) -> None:
         key_size_bits = int(self.key_size_combo.currentText())
@@ -187,91 +186,77 @@ class KeygenPage(QWidget):
         self.raw_nonce = material.nonce
 
         self.config.keygen["key_size"] = key_size_bits
-        self.config.keygen["format"] = self.format_combo.currentText()
 
-        self.render_current_format()
+        self.render_current_values()
 
-    def on_format_changed(self, new_format: str) -> None:
-        self.try_absorb_edits(previous_format=self.config.keygen.get("format", key_format.FORMAT_HEX))
-        self.config.keygen["format"] = new_format
-        self.render_current_format()
-
-    def try_absorb_edits(self, previous_format: str) -> None:
+    def sync_from_text(self) -> None:
+        """Absorb any manual edits/pastes in the textboxes back into raw bytes."""
         key_text = self.key_edit.toPlainText()
         if key_text.strip():
             try:
-                self.raw_key = key_format.decode(key_text, previous_format)
+                self.raw_key = key_format.decode(key_text, key_format.FORMAT_HEX)
             except key_format.KeyFormatError:
                 pass
 
         nonce_text = self.nonce_edit.toPlainText()
         if nonce_text.strip():
             try:
-                self.raw_nonce = key_format.decode(nonce_text, previous_format)
+                self.raw_nonce = key_format.decode(nonce_text, key_format.FORMAT_HEX)
             except key_format.KeyFormatError:
                 pass
 
-    def render_current_format(self) -> None:
-        fmt = self.format_combo.currentText()
-
+    def render_current_values(self) -> None:
         if self.raw_key is not None:
-            self.key_edit.setPlainText(key_format.encode(self.raw_key, fmt))
+            self.key_edit.setPlainText(key_format.encode(self.raw_key, key_format.FORMAT_HEX))
         if self.raw_nonce is not None:
-            self.nonce_edit.setPlainText(key_format.encode(self.raw_nonce, fmt))
+            self.nonce_edit.setPlainText(key_format.encode(self.raw_nonce, key_format.FORMAT_HEX))
 
     def copy_to_clipboard(self, edit: PlainTextEdit) -> None:
-        from PySide6.QtWidgets import QApplication
-
         QApplication.clipboard().setText(edit.toPlainText())
-        InfoBar.success(
-            title=self.i18n.t("common.success"),
-            content=self.i18n.t("common.copied"),
-            position=InfoBarPosition.TOP,
-            duration=1500,
-            parent=self,
-        )
+        InfoBar.success(title=self.i18n.t("common.success"),
+                        content=self.i18n.t("common.copied"),
+                        position=InfoBarPosition.TOP,
+                        duration=1500, parent=self)
 
-    def on_export(self, export_format: str) -> None:
-        self.try_absorb_edits(previous_format=self.format_combo.currentText())
 
-        if self.raw_key is None:
-            InfoBar.warning(
-                title=self.i18n.t("common.error"),
-                content=self.i18n.t("keygen.no_key_yet"),
-                position=InfoBarPosition.TOP,
-                duration=2500,
-                parent=self,
-            )
+    def on_export(self, is_key: bool) -> None:
+        self.sync_from_text()
+
+        raw = self.raw_key if is_key else self.raw_nonce
+        if raw is None:
+            InfoBar.warning(title=self.i18n.t("common.error"),
+                            content=self.i18n.t("keygen.no_key_yet"),
+                            position=InfoBarPosition.TOP,
+                            duration=2500, parent=self)
             return
 
         default_dir = self.config.last_used.get("output_dir", "")
-        path, _ = QFileDialog.getSaveFileName(self, self.i18n.t("common.save_as"), default_dir)
+        path, _ = QFileDialog.getSaveFileName(
+            self, self.i18n.t("common.save_as"), default_dir, "Binary (*.bin);;All Files (*)"
+        )
         if not path:
             return
 
-        data = key_format.encode_bytes_for_export(self.raw_key, export_format)
+        data = key_format.encode_bytes_for_export(raw, key_format.FORMAT_HEX)
         with open(path, "wb") as f:
             f.write(data)
 
-        self.config.last_used["output_dir"] = str(__import__("pathlib").Path(path).parent)
+        self.config.last_used["output_dir"] = str(Path(path).parent)
 
-        InfoBar.success(
-            title=self.i18n.t("common.success"),
-            content=self.i18n.t("keygen.exported").format(path=path),
-            position=InfoBarPosition.TOP,
-            duration=2500,
-            parent=self,
-        )
+        InfoBar.success(title=self.i18n.t("common.success"),
+                        content=self.i18n.t("keygen.exported").format(path=path),
+                        position=InfoBarPosition.TOP,
+                        duration=2500, parent=self)
+
 
     def retranslate_ui(self) -> None:
         self.title_label.setText(self.i18n.t("keygen.title"))
         self.algorithm_label.setText(self.i18n.t("keygen.algorithm"))
         self.key_size_label.setText(self.i18n.t("keygen.key_size"))
-        self.format_label.setText(self.i18n.t("keygen.format"))
         self.execute_button.setText(self.i18n.t("keygen.execute"))
         self.key_label.setText(self.i18n.t("keygen.encryption_key"))
         self.nonce_label.setText(self.i18n.t("keygen.nonce"))
         self.key_copy_button.setText(self.i18n.t("common.copy"))
         self.nonce_copy_button.setText(self.i18n.t("common.copy"))
-        self.export_hex_button.setText(self.i18n.t("keygen.export_hex"))
-        self.export_pem_button.setText(self.i18n.t("keygen.export_pem"))
+        self.export_key_button.setText(self.i18n.t("common.export"))
+        self.export_nonce_button.setText(self.i18n.t("common.export"))

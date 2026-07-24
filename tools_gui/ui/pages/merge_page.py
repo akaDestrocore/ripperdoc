@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+
+"""
+File: merge.py
+
+Brief:
+    Merge multiple binaries into a single binary file. 
+    Allows modifing some of binary header parameters.
+
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -56,10 +71,12 @@ class VersionFields(QWidget):
 
         row.addStretch(1)
 
+
     def make_spin(self, max_value: int) -> QSpinBox:
         spin = QSpinBox(self)
         spin.setRange(0, max_value)
         return spin
+
 
     def values(self) -> tuple[tuple[int, int, int], int]:
         version = (
@@ -130,6 +147,7 @@ class ImageSlot(QWidget):
 
         self.browse_button.clicked.connect(self.on_browse)
 
+
     def on_browse(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, self.i18n.t("common.select_file"), "", "Binary (*.bin);;All Files (*)")
         if not path:
@@ -151,6 +169,7 @@ class ImageSlot(QWidget):
         except PatchHeaderError as exc:
             self.detected_type = None
             self.status_caption.setText(f"⚠ {exc}")
+
 
 
 class MergePage(QWidget):
@@ -243,20 +262,33 @@ class MergePage(QWidget):
 
         root.addStretch()
 
+
     def make_hex_field(self, default_value: int) -> LineEdit:
         edit = LineEdit(self)
         edit.setText(f"0x{default_value:08X}")
         return edit
 
+
     def connect_signals(self) -> None:
         self.merge_button.clicked.connect(self.on_merge)
+
 
     def parse_hex_field(self, edit: LineEdit) -> int:
         return int(edit.text().strip(), 0)
 
+
     def on_merge(self) -> None:
         if self.boot_slot.raw is None or self.updater_slot.raw is None or self.app_slot.raw is None:
             self.report_error(self.i18n.t("merge.missing_slots"))
+            return
+
+        try:
+            updater_offset = self.parse_hex_field(self.updater_offset_edit)
+            app_offset = self.parse_hex_field(self.app_offset_edit)
+            updater_base_addr = self.parse_hex_field(self.updater_base_edit)
+            app_base_addr = self.parse_hex_field(self.app_base_edit)
+        except ValueError:
+            self.report_error(self.i18n.t("merge.bad_number"))
             return
 
         try:
@@ -265,9 +297,6 @@ class MergePage(QWidget):
         except ValueError as exc:
             self.report_error(str(exc))
             return
-
-        updater_version, updater_security_version = self.updater_slot.version_fields.values()
-        app_version, app_security_version = self.app_slot.version_fields.values()
 
         try:
             result = merge.patch_and_merge_bytes(
@@ -298,13 +327,11 @@ class MergePage(QWidget):
             f.write(result.output_bytes)
         self.config.last_used["output_dir"] = str(Path(out_path).parent)
 
-        InfoBar.success(
-            title=self.i18n.t("common.success"),
-            content=self.i18n.t("keygen.exported").format(path=out_path),
-            position=InfoBarPosition.TOP,
-            duration=2500,
-            parent=self,
-        )
+        InfoBar.success(title=self.i18n.t("common.success"),
+                        content=self.i18n.t("keygen.exported").format(path=out_path),
+                        position=InfoBarPosition.TOP,
+                        duration=2500, parent=self)
+
 
     def report_error(self, message: str) -> None:
         InfoBar.error(
@@ -314,6 +341,7 @@ class MergePage(QWidget):
             duration=3500,
             parent=self,
         )
+
 
     def retranslate_ui(self) -> None:
         self.title_label.setText(self.i18n.t("merge.title"))
