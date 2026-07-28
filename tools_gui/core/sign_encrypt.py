@@ -37,7 +37,7 @@ SHA256_LEN              = 32
 SIGNATURE_LEN           = 64
 
 IMAGE_FLAG_ENCRYPTED    = 1 << 0
-IMAGE_FLAG_SIGNED       = 1 << 0
+IMAGE_FLAG_SIGNED       = 1 << 1
 
 
 class SignEncryptError(Exception):
