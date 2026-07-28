@@ -31,7 +31,7 @@ from qfluentwidgets import (
 )
 
 from tools_gui.core import merge
-from tools_gui.core.patch_header import PatchHeaderError, read_header_type
+from tools_gui.core.patch_header import PatchHeaderError, read_image_type
 
 DEFAULT_UPDATER_OFFSET      = 0x00004000
 DEFAULT_APP_OFFSET          = 0x00040000
@@ -164,11 +164,11 @@ class ImageSlot(QWidget):
             return
 
         try:
-            self.detected_type = read_header_type(self.raw)
+            self.detected_type = read_image_type(self.raw)
             self.status_caption.setText(f"{self.detected_type} — {len(self.raw)} bytes")
         except PatchHeaderError as exc:
             self.detected_type = None
-            self.status_caption.setText(f"⚠ {exc}")
+            self.status_caption.setText(f"⊗ {exc}")
 
 
 
@@ -299,18 +299,26 @@ class MergePage(QWidget):
             return
 
         try:
+            updater = merge.BinaryImage(
+                offset=updater_offset,
+                base_addr=updater_base_addr,
+                version=updater_version,
+                security_version=updater_security_version,
+                raw=self.updater_slot.raw,
+            )
+
+            app = merge.BinaryImage(
+                offset=app_offset,
+                base_addr=app_base_addr,
+                version=app_version,
+                security_version=app_security_version,
+                raw=self.app_slot.raw,
+            )
+
             result = merge.patch_and_merge_bytes(
                 self.boot_slot.raw,
-                self.updater_slot.raw,
-                self.app_slot.raw,
-                updater_offset,
-                app_offset,
-                updater_base_addr,
-                app_base_addr,
-                updater_version=updater_version,
-                updater_security_version=updater_security_version,
-                app_version=app_version,
-                app_security_version=app_security_version,
+                updater=updater,
+                app=app,
             )
         except merge.MergeError as exc:
             self.report_error(f"{exc}")
