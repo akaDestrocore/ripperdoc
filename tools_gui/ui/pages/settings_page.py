@@ -155,11 +155,35 @@ class SettingsPage(QWidget):
         config_dir.mkdir(parents=True, exist_ok=True)
 
         if sys.platform.startswith("win"):
-            subprocess.Popen(["explorer.exe", str(config_dir)])
+            opened = self.try_open_commands([["explorer.exe", str(config_dir)]])
         elif sys.platform == "darwin":
-            subprocess.Popen(["open", str(config_dir)])
+            opened = self.try_open_commands([["open", str(config_dir)]])
         else:
-            subprocess.Popen(["xdg-open", str(config_dir)])
+            opened = self.try_open_commands([
+                ["xdg-open", str(config_dir)],
+                ["gio", "open", str(config_dir)],
+                ["gnome-open", str(config_dir)],
+                ["kde-open", str(config_dir)],
+            ])
+
+        if not opened:  
+            InfoBar.error(
+                title=self.i18n.t("common.error"),
+                content=str(config_dir),
+                position=InfoBarPosition.TOP,
+                duration=4000,
+                parent=self,
+            )
+
+
+    def try_open_commands(self, commands: list[list[str]]) -> bool:
+        for command in commands:
+            try:
+                subprocess.Popen(command)
+                return True
+            except (FileNotFoundError, OSError):
+                continue
+        return False
 
 
     def on_reset_clicked(self) -> None:
