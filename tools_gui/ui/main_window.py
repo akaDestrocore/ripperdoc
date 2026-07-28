@@ -22,7 +22,6 @@ from tools_gui.services import user_config
 from tools_gui.services.i18n_service import I18nService
 from tools_gui.ui.pages.keygen_page import KeygenPage
 from tools_gui.ui.pages.settings_page import SettingsPage
-from tools_gui.ui.widgets.status_bar import StatusBar
 from tools_gui.ui.pages.merge_page import MergePage
 from tools_gui.ui.pages.sign_encrypt_page import SignEncryptPage
 from tools_gui.ui.pages.ecdsa_keygen_page import EcdsaKeygenPage
@@ -92,13 +91,11 @@ class MainWindow(AcrylicWindow):
 
         self.navigationInterface = NavigationInterface(self, showMenuButton=True)
         self.stackedWidget = QStackedWidget(self)
-        self.statusBar = StatusBar(self)
 
         rightLayout = QVBoxLayout()
         rightLayout.setContentsMargins(0, 0, 0, 0)
         rightLayout.setSpacing(0)
         rightLayout.addWidget(self.stackedWidget, stretch=1)
-        rightLayout.addWidget(self.statusBar)
 
         self.hBoxLayout.addWidget(self.navigationInterface)
         self.hBoxLayout.addLayout(rightLayout, stretch=1)
