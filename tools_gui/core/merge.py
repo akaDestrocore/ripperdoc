@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 
+"""
+File: merge.py
+
+Brief:
+    Merge bootloader and two images into a single output file.
+Author:
+    destrocore
+
+Created: 2026-07-20
+"""
+
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from tools_gui.core.patch_header import PatchHeaderError, patch_bytes
 
@@ -9,6 +21,7 @@ PAD_BYTE = b"\xFF"
 
 class MergeError(Exception):
     pass
+
 
 @dataclass(frozen=True)
 class MergeResult:
@@ -19,95 +32,60 @@ class MergeResult:
     total_size: int
 
 
-def merge_bytes(bootloader: bytes, updater: bytes,
-                app: bytes, updater_offset: int,
-                app_offset: int) -> MergeResult:
-    
-    if len(bootloader) > updater_offset:
-        raise MergeError("Bootloader too large")
-
-    if len(updater) > (app_offset - updater_offset):
-        raise MergeError("Updater too large")
-
-    pad1 = PAD_BYTE * (updater_offset - len(bootloader))
-    pad2 = PAD_BYTE * (app_offset - updater_offset - len(updater))
-
-    merged = bootloader + pad1 + updater + pad2 + app
-
-    return MergeResult(
-        output_bytes=merged,
-        bootloader_size=len(bootloader),
-        updater_size=len(updater),
-        app_size=len(app),
-        total_size=len(merged),
-    )
+@dataclass
+class BinaryImage:
+    offset: int
+    base_addr: int
+    version: tuple[int, int, int]
+    security_version: int
+    raw: bytes
 
 
-def merge_files(boot_path: str, updater_path: str,
-                app_path: str, output_path: str,
-                updater_offset: int, app_offset: int) -> MergeResult:
-    with open(boot_path, "rb") as f:
-        bootloader = f.read()
+def merge_bytes(bootloader: bytes, updater: BinaryImage, app: BinaryImage) -> MergeResult:
 
-    with open(updater_path, "rb") as f:
-        updater = f.read()
+    if len(bootloader) > updater.offset:
+        raise MergeError(f"Bootloader image will not fit in region FLASH. Region FLASH overflowed by {len(bootloader)-updater.offset} bytes")
 
-    with open(app_path, "rb") as f:
-        app = f.read()
+    if len(updater.raw) > app.offset:
+         raise MergeError(f"Updater image will not fit in region FLASH. Region FLASH overflowed by {len(updater.raw) - app.offset} bytes")
 
-    result = merge_bytes(bootloader, updater, app, updater_offset, app_offset)
+    pad1 = PAD_BYTE * (updater.offset - len(bootloader))
+    pad2 = PAD_BYTE * (app.offset - len(updater.raw))
 
-    with open(output_path, "wb") as f:
-        f.write(result.output_bytes)
+    merged = bootloader + pad1 + updater.raw + pad2 + app.raw
 
-    return result
+    return MergeResult(output_bytes=merged, 
+                       bootloader_size=len(bootloader),
+                       updater_size=len(updater.raw),
+                       app_size=len(app.raw),
+                       total_size=len(merged))
 
 
-def patch_and_merge_bytes(bootloader: bytes, updater_raw: bytes,
-                        app_raw: bytes, updater_offset: int,
-                        app_offset: int, updater_base_addr: int,
-                        app_base_addr: int, updater_version: tuple[int, int, int] = (0, 0, 0),
-                        updater_security_version: int = 0, app_version: tuple[int, int, int] = (0, 0, 0),
-                        app_security_version: int = 0 ) -> MergeResult:
+def patch_and_merge_bytes(bootloader: bytes, updater: BinaryImage, app: BinaryImage) -> MergeResult:
+    try:
+        updater_patched = patch_bytes(raw=updater.raw, base_addr=updater.base_addr, 
+                                      version_major=updater.version[0], 
+                                      version_minor=updater.version[1], 
+                                      version_patch=updater.version[2], 
+                                      security_version=updater.security_version)
+
+    except PatchHeaderError as e:
+        raise MergeError(f"Error patching updater:{e}") from e
+
+    if "UPDATER" != updater_patched.image_type:
+            raise MergeError(f"Selected updater slot contains an '{updater_patched.image_type}' image, expected UPDATER")
 
     try:
-        updater_patched = patch_bytes(
-            updater_raw,
-            updater_base_addr,
-            version_major=updater_version[0],
-            version_minor=updater_version[1],
-            version_patch=updater_version[2],
-            security_version=updater_security_version,
-        )
-    except PatchHeaderError as exc:
-        raise MergeError(f"Updater header invalid: {exc}") from exc
+         app_patched = patch_bytes(raw=app.raw, base_addr=app.base_addr, 
+                                   version_major=app.version[0],
+                                   version_minor=app.version[1],
+                                   version_patch=app.version[2],
+                                   security_version=app.security_version)
 
-    if updater_patched.image_type != "UPDATER":
-        raise MergeError(
-            f"Selected updater slot contains an '{updater_patched.image_type}' image, expected UPDATER"
-        )
+    except PatchHeaderError as e:
+        raise MergeError(f"Error patching app:{e}") from e
 
-    try:
-        app_patched = patch_bytes(
-            app_raw,
-            app_base_addr,
-            version_major=app_version[0],
-            version_minor=app_version[1],
-            version_patch=app_version[2],
-            security_version=app_security_version,
-        )
-    except PatchHeaderError as exc:
-        raise MergeError(f"Application header invalid: {exc}") from exc
+    if "APP" != app_patched.image_type:
+         raise MergeError(f"Selected app slot contains an '{app_patched.image_type}' image, expected APP")
 
-    if app_patched.image_type != "APP":
-        raise MergeError(
-            f"Selected application slot contains a '{app_patched.image_type}' image, expected APP"
-        )
-
-    return merge_bytes(
-        bootloader,
-        updater_patched.output_bytes,
-        app_patched.output_bytes,
-        updater_offset,
-        app_offset,
-    )
+    return merge_bytes(bootloader=bootloader, updater=updater, app=app)
