@@ -90,14 +90,14 @@ def aes_gcm_encrypt(data: bytes, key: bytes, nonce: bytes) -> bytes:
         raise RuntimeError(f"GCM is most commonly used with 96-bit (12-byte) nonces, which is the length recommended by NIST SP 800-38D."
                            f"Received nonce lenght is {len(nonce)}")
 
-    cipher = AES.new(key, AES.MODE_GCM)
+    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
     ciphertext, tag = cipher.encrypt_and_digest(data)
 
     return ciphertext, tag
 
 
 def sign_data(priv_key: ECC.EccKey, data: bytes) -> tuple[bytes, bytes]:
-    h = SHA256.new()
+    h = SHA256.new(data)
     digest = h.digest()
 
     signer = DSS.new(key=priv_key, mode="fips-186-3", encoding="binary")
