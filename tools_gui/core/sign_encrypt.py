@@ -28,7 +28,7 @@ IMAGE_HDR_SIZE          = 0x200
 OFFSET_FLAGS            = 0x07
 OFFSET_NONCE            = 0x18
 OFFSET_GCM_TAG          = 0x24
-OFFSET_SHA256           = 0x36
+OFFSET_SHA256           = 0x34
 OFFSET_SIGNATURE        = 0x54
 
 NONCE_LEN               = 12
